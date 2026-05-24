@@ -5,7 +5,10 @@ Render deployment: FastAPI + WebSocket
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
 import json
+
+templates = Jinja2Templates(directory="templates")
 
 app = FastAPI()
 
@@ -46,3 +49,7 @@ async def signaling(ws: WebSocket, room_id: str):
 @app.get("/")
 def root():
     return {"status": "ok", "rooms": list(rooms.keys())}
+
+@app.get("/home")
+def root(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
