@@ -1,1 +1,62 @@
-<h1>This is Signaling Server Page</h1>
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>管理ページ</title>
+    <style>
+      body {
+        font-family: monospace;
+        background: #0c0c0c;
+        color: #ddd;
+        padding: 2rem;
+      }
+
+      h1 {
+        color: #4af0c8;
+        margin-bottom: 1.5rem;
+      }
+
+      .label {
+        color: #555;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.4rem;
+      }
+
+      .room-list {
+        list-style: none;
+        margin-bottom: 2rem;
+      }
+
+      .room-list li {
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #1e1e1e;
+        font-size: 0.9rem;
+      }
+
+      .empty {
+        color: #444;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Signaling Server</h1>
+
+    <div class="label">アクティブルーム</div>
+    <ul class="room-list">
+      {% if rooms %}
+        {% for room in rooms %}
+          <li>{{ room }}</li>
+        {% endfor %}
+      {% else %}
+        <li class="empty">現在アクティブなルームはありません</li>
+      {% endif %}
+    </ul>
+
+    <div class="label">ステータス</div>
+    <p>ルーム数: {{ rooms | length }}</p>
+  </body>
+</html>
