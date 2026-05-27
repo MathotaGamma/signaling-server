@@ -59,7 +59,8 @@ def health():
 @app.get("/home")
 def home(request: Request):
     """管理ページ。"""
-    return templates.TemplateResponse("home.html", {
-        "request": request,
-        "rooms":   list(rooms.keys()),
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="home.html",
+        context={"rooms": list(rooms.keys())},
+    )
