@@ -18,7 +18,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 BASE_DIR = Path(__file__).resolve().parent
-pront(str(BASE_DIR))
+print(str(BASE_DIR))
 
 templates = Jinja2Templates(
     directory=str(BASE_DIR / "templates")
