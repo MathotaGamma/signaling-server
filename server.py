@@ -41,7 +41,7 @@ async def signaling(ws: WebSocket, room_id: str):
     peers = rooms[room_id]
 
     # 自分が何番目の入室者かを明示的に通知する
-    await ws.send_text(json.dumps({"type": "welcome", "count": len(peers)}
+    await ws.send_text(json.dumps({"type": "welcome", "count": len(peers)}))
 
     try:
         while True:
