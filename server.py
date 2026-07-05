@@ -1,17 +1,9 @@
 """
 Signaling Server (Render)
-/ws/{room_id}  … WebRTC シグナリング。同室全員にbroadcast（送信者除く）
+/ws/p2p/{room_id}  … WebRTC シグナリング。P2P
+/ws/mesh/{room_id}  … WebRTC シグナリング。同室全員にbroadcast（送信者除く）
 /              … ヘルスチェック（Renderウォームアップ用）
 /home          … 管理ページ（templates/home.html）
-
-【v2での変更点】
-- 入室時に、自分が「何番目の入室者か」をクライアントへ明示的に通知するように変更。
-  旧版は2人目にだけ {"type":"ready"} を送っていたが、1人目には何も通知していなかったため、
-  クライアント側が「自分がPlayer1なのかPlayer2なのか」を確定できず、
-  1人目が操作不能になる不具合があった。
-- 1人目には {"type": "welcome", "isFirst": true}
-  2人目には {"type": "ready", "isFirst": false} を送ることで、
-  クライアント側だけで isHost / myPlayer を確実に確定できるようにする。
 """
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,14 +23,49 @@ BASE_DIR  = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # room_id -> [WebSocket, ...]
-rooms: dict[str, list[WebSocket]] = {}
+meshRooms: dict[str, list[WebSocket]] = {}
+p2pRooms: dict[str, list[WebSocket]] = {}
 
-
-@app.websocket("/ws/{room_id}")
-async def signaling(ws: WebSocket, room_id: str):
+@app.websocket("/ws/p2p/{room_id}")
+async def signaling_p2p(ws: WebSocket, room_id: str):
     await ws.accept()
-    rooms.setdefault(room_id, []).append(ws)
-    peers = rooms[room_id]
+    
+    # 満員チェック（すでに2人いる場合は接続を拒否して切断する）
+    if room_id in p2pRooms and len(p2pRooms[room_id]) >= 2:
+        await ws.send_text(json.dumps({"type": "error", "message": "Room is full"}))
+        await ws.close()
+        return
+
+    p2pRooms.setdefault(room_id, []).append(ws)
+    peers = p2pRooms[room_id]
+
+    # 人数に応じた役割分担の通知
+    if len(peers) == 1:
+        # 1人目は待機状態
+        await ws.send_text(json.dumps({"type": "welcome", "count": 1}))
+    elif len(peers) == 2:
+        # 2人目が入ってきたら、2人目自身に通知
+        await ws.send_text(json.dumps({"type": "welcome", "count": 2}))
+
+    try:
+        while True:
+            data = await ws.receive_text()
+            for peer in peers:
+                if peer is not ws:
+                    await peer.send_text(data)
+    except WebSocketDisconnect:
+        if room_id in p2pRooms:
+            if ws in p2pRooms[room_id]:
+                p2pRooms[room_id].remove(ws)
+            if not p2pRooms[room_id]:
+                del p2pRooms[room_id]
+
+
+@app.websocket("/ws/mesh/{room_id}")
+async def signaling_mesh(ws: WebSocket, room_id: str):
+    await ws.accept()
+    meshRooms.setdefault(room_id, []).append(ws)
+    peers = meshRooms[room_id]
 
     # 自分が何番目の入室者かを明示的に通知する
     await ws.send_text(json.dumps({"type": "welcome", "count": len(peers)}))
@@ -50,22 +77,28 @@ async def signaling(ws: WebSocket, room_id: str):
                 if peer is not ws:
                     await peer.send_text(data)
     except WebSocketDisconnect:
-        peers.remove(ws)
-        if not peers:
-            del rooms[room_id]
+        if room_id in meshRooms:
+            if ws in meshRooms[room_id]:
+                meshRooms[room_id].remove(ws)
+            if not meshRooms[room_id]:
+                del meshRooms[room_id]
 
 
 @app.get("/")
 def health():
     """Renderウォームアップ・死活監視用。"""
-    return {"status": "ok", "rooms": len(rooms)}
+    # 存在する全部屋の合計数を返すように修正
+    total_rooms = len(meshRooms) + len(p2pRooms)
+    return {"status": "ok", "rooms": total_rooms}
 
 
 @app.get("/home")
 def home(request: Request):
     """管理ページ。"""
+    mesh_keys = ",".join(list(meshRooms.keys()))
+    p2p_keys = ",".join(list(p2pRooms.keys())) # join のタイポを修正
     return templates.TemplateResponse(
         request=request,
         name="home.html",
-        context={"rooms": list(rooms.keys())},
+        context={"rooms": f"Mesh: [{mesh_keys}] | P2P: [{p2p_keys}]"},
     )
