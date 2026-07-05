@@ -37,20 +37,19 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
         return
 
     p2pRooms.setdefault(room_id, []).append(ws)
-    peers = p2pRooms[room_id]
 
     # 人数に応じた役割分担の通知
-    if len(peers) == 1:
+    if len(p2pRooms[room_id]) == 1:
         # 1人目は待機状態
         await ws.send_text(json.dumps({"type": "welcome", "count": 1}))
-    elif len(peers) == 2:
+    elif len(p2pRooms[room_id]) == 2:
         # 2人目が入ってきたら、2人目自身に通知
         await ws.send_text(json.dumps({"type": "welcome", "count": 2}))
 
     try:
         while True:
             data = await ws.receive_text()
-            for peer in peers:
+            for peer in p2pRooms[room_id]:
                 if peer is not ws:
                     await peer.send_text(data)
     except WebSocketDisconnect:
@@ -65,15 +64,14 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
 async def signaling_mesh(ws: WebSocket, room_id: str):
     await ws.accept()
     meshRooms.setdefault(room_id, []).append(ws)
-    peers = meshRooms[room_id]
 
     # 自分が何番目の入室者かを明示的に通知する
-    await ws.send_text(json.dumps({"type": "welcome", "count": len(peers)}))
+    await ws.send_text(json.dumps({"type": "welcome", "count": len(meshRooms[room_id])}))
 
     try:
         while True:
             data = await ws.receive_text()
-            for peer in peers:
+            for peer in meshRooms[room_id]:
                 if peer is not ws:
                     await peer.send_text(data)
     except WebSocketDisconnect:
