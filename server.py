@@ -54,7 +54,10 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
                 p2pRooms[room_id].remove(ws)
             if p2pRooms[room_id]:
                 for peer in list(p2pRooms[room_id]):
-                    await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+                    try:
+                        await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+                    except Exception:
+                        pass # 既に切断されているpeerは無視
             else:
                 del p2pRooms[room_id]
 
@@ -80,7 +83,10 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
                 meshRooms[room_id].remove(ws)
             if meshRooms[room_id]:
                 for peer in list(meshRooms[room_id]):
-                    await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+                    try:
+                        await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+                    except Exception:
+                        pass # 既に切断されているpeerは無視
             else:
                 del meshRooms[room_id]
 
