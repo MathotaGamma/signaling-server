@@ -60,8 +60,9 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
     await ws.accept()
     meshRooms.setdefault(room_id, []).append(ws)
 
-    # 自分が何番目の入室者かを明示的に通知する
-    await ws.send_text(json.dumps({"type": "welcome", "list": list(meshRooms[room_id].keys())}))
+    # idで一意の識別番号を取得
+    ws_list = [id(client) for client in meshRooms[room_id]]
+    await ws.send_text(json.dumps({"type": "welcome", "list": ws_list}))
 
     try:
         while True:
