@@ -54,7 +54,7 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
                 p2pRooms[room_id].remove(ws)
             if p2pRooms[room_id]:
                 for peer in list(p2pRooms[room_id]):
-                    await peer.send_text(json.dumps({"type": "leave"}))
+                    await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
             else:
                 del p2pRooms[room_id]
 
