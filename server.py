@@ -38,13 +38,13 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
 
     p2pRooms.setdefault(room_id, []).append(ws)
 
-    ws_list = [id(client) for client in p2pRooms[room_id]]
+    ws_list = [str(id(client)) for client in p2pRooms[room_id]]
     # 人数に応じた役割分担の通知
-    await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": id(ws)}))
+    await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": str(id(ws))}))
     for peer in list(p2pRooms[room_id]):
         if peer is not ws:
             try:
-                await peer.send_text(json.dumps({"type": "new_peer", "id": id(ws)}))
+                await peer.send_text(json.dumps({"type": "new_peer", "id": str(id(ws))}))
             except Exception:
                 pass
 
@@ -61,7 +61,7 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
             if p2pRooms[room_id]:
                 for peer in list(p2pRooms[room_id]):
                     try:
-                        await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+                        await peer.send_text(json.dumps({"type": "leave", "id": str(id(ws))}))
                     except Exception:
                         pass # 既に切断されているpeerは無視
             else:
