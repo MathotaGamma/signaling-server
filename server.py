@@ -74,7 +74,7 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
     meshRooms.setdefault(room_id, []).append(ws)
 
     # idで一意の識別番号を取得
-    ws_list = [id(client) for client in meshRooms[room_id]]
+    ws_list = [str(id(client)) for client in meshRooms[room_id]]
     await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": str(id(ws))}))
 
     for peer in list(meshRooms[room_id]):
