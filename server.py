@@ -40,7 +40,7 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
 
     ws_list = [id(client) for client in p2pRooms[room_id]]
     # 人数に応じた役割分担の通知
-    await ws.send_text(json.dumps({"type": "welcome", "list": ws_list}))
+    await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": id(ws)}))
 
     try:
         while True:
@@ -66,7 +66,7 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
 
     # idで一意の識別番号を取得
     ws_list = [id(client) for client in meshRooms[room_id]]
-    await ws.send_text(json.dumps({"type": "welcome", "list": ws_list}))
+    await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": id(ws)}))
 
     try:
         while True:
@@ -97,7 +97,7 @@ def health():
 def home(request: Request):
     """管理ページ。"""
     mesh_keys = ",".join(list(meshRooms.keys()))
-    p2p_keys = ",".join(list(p2pRooms.keys())) # join のタイポを修正
+    p2p_keys = ",".join(list(p2pRooms.keys()))
     return templates.TemplateResponse(
         request=request,
         name="home.html",
