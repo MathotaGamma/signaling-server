@@ -75,12 +75,12 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
 
     # idで一意の識別番号を取得
     ws_list = [id(client) for client in meshRooms[room_id]]
-    await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": id(ws)}))
+    await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": str(id(ws))}))
 
     for peer in list(meshRooms[room_id]):
         if peer is not ws:
             try:
-                await peer.send_text(json.dumps({"type": "new_peer", "id": id(ws)}))
+                await peer.send_text(json.dumps({"type": "new_peer", "id": str(id(ws))}))
             except Exception:
                 pass
 
@@ -97,7 +97,7 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
             if meshRooms[room_id]:
                 for peer in list(meshRooms[room_id]):
                     try:
-                        await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+                        await peer.send_text(json.dumps({"type": "leave", "id": str(id(ws))}))
                     except Exception:
                         pass # 既に切断されているpeerは無視
             else:
