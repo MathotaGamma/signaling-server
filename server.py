@@ -41,6 +41,12 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
     ws_list = [id(client) for client in p2pRooms[room_id]]
     # 人数に応じた役割分担の通知
     await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": id(ws)}))
+    for peer in list(p2pRooms[room_id]):
+        if peer is not ws:
+            try:
+                await peer.send_text(json.dumps({"type": "new_peer", "id": id(ws)}))
+            except Exception:
+                pass
 
     try:
         while True:
@@ -70,6 +76,13 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
     # idで一意の識別番号を取得
     ws_list = [id(client) for client in meshRooms[room_id]]
     await ws.send_text(json.dumps({"type": "join", "list": ws_list, "id": id(ws)}))
+
+    for peer in list(meshRooms[room_id]):
+        if peer is not ws:
+            try:
+                await peer.send_text(json.dumps({"type": "new_peer", "id": id(ws)}))
+            except Exception:
+                pass
 
     try:
         while True:
