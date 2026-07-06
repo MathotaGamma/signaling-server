@@ -39,8 +39,7 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
     p2pRooms.setdefault(room_id, []).append(ws)
 
     # 人数に応じた役割分担の通知
-    await ws.send_text(json.dumps({"type": "welcome", "list": list(p2pRooms[room_id].keys())}))
-    await ws.send_text(json.dumps({"type": "welcome", "list": list(p2pRooms[room_id].keys())}))
+    await ws.send_text(json.dumps({"type": "welcome", "count": len(p2pRooms[room_id])}))
 
     try:
         while True:
