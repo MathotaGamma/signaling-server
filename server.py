@@ -38,20 +38,24 @@ async def signaling_p2p(ws: WebSocket, room_id: str):
 
     p2pRooms.setdefault(room_id, []).append(ws)
 
+    ws_list = [id(client) for client in p2pRooms[room_id]]
     # 人数に応じた役割分担の通知
-    await ws.send_text(json.dumps({"type": "welcome", "count": len(p2pRooms[room_id])}))
+    await ws.send_text(json.dumps({"type": "welcome", "list": ws_list}))
 
     try:
         while True:
             data = await ws.receive_text()
-            for peer in p2pRooms[room_id]:
+            for peer in list(p2pRooms[room_id]):
                 if peer is not ws:
                     await peer.send_text(data)
     except WebSocketDisconnect:
         if room_id in p2pRooms:
             if ws in p2pRooms[room_id]:
                 p2pRooms[room_id].remove(ws)
-            if not p2pRooms[room_id]:
+            if p2pRooms[room_id]:
+                for peer in list(p2pRooms[room_id]):
+                    await peer.send_text(json.dumps({"type": "leave"}))
+            else:
                 del p2pRooms[room_id]
 
 
@@ -67,14 +71,17 @@ async def signaling_mesh(ws: WebSocket, room_id: str):
     try:
         while True:
             data = await ws.receive_text()
-            for peer in meshRooms[room_id]:
+            for peer in list(meshRooms[room_id]):
                 if peer is not ws:
                     await peer.send_text(data)
     except WebSocketDisconnect:
         if room_id in meshRooms:
             if ws in meshRooms[room_id]:
                 meshRooms[room_id].remove(ws)
-            if not meshRooms[room_id]:
+            if meshRooms[room_id]:
+                for peer in list(meshRooms[room_id]):
+                    await peer.send_text(json.dumps({"type": "leave", "id": id(ws)}))
+            else:
                 del meshRooms[room_id]
 
 
